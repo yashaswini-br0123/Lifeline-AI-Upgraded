@@ -1,0 +1,76 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String             @id @default(uuid())
+  email                 String             @unique
+  passwordHash          String
+  name                  String
+  age                   Int?
+  bloodType             String?
+  allergies             String?
+  chronicConditions     String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  medicalRecords        MedicalRecord[]
+  medications           Medication[]
+  appointments          Appointment[]
+  emergencyContacts     EmergencyContact[]
+}
+
+model MedicalRecord {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName      String
+  fileType      String   // "image" or "pdf"
+  fileUrl       String?  // Data URL or local path for simulation
+  extractedText String?
+  aiSummary     String?
+  category      String   // "Prescription", "Lab Report", "Discharge Summary", "Other"
+  uploadedAt    DateTime @default(now())
+}
+
+model Medication {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  dosage           String
+  schedule         String    // e.g. "morning", "twice a day", "every 8 hours"
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
+  instructions     String?
+  active           Boolean   @default(true)
+  flaggedConflicts String?   // Conflict warnings from AI check
+  createdAt        DateTime  @default(now())
+}
+
+model Appointment {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctorName String
+  specialty  String
+  dateTime   DateTime
+  notes      String?
+  status     String   // "Scheduled", "Completed", "Cancelled"
+  createdAt  DateTime @default(now())
+}
+
+model EmergencyContact {
+  id           String @id @default(uuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String
+  phoneNumber  String
+}
