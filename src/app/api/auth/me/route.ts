@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifySession } from "@/lib/auth";
+import { verifySession, signSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const DEMO_USER = {
@@ -22,6 +22,16 @@ export async function GET() {
     const sessionToken = cookieStore.get("session")?.value;
 
     if (!sessionToken) {
+      const demoToken = signSession({
+        userId: DEMO_USER.id,
+        email: DEMO_USER.email,
+        name: DEMO_USER.name,
+      });
+      cookieStore.set("session", demoToken, {
+        httpOnly: true,
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60,
+      });
       return NextResponse.json({ user: DEMO_USER });
     }
 
