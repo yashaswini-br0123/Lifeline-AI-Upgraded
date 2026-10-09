@@ -1,20 +1,20 @@
-# 🏥 LifeLine AI — Intelligent Healthcare & Emergency Assistance Platform
+# LifeLine AI - Intelligent Healthcare & Emergency Assistance Platform
 
-> **Hack2Skill AI Code Submission Document**  
-> **Vertical**: Healthcare & Clinical Decision Support  
-> **Live Web Application**: [https://lifeline-ai-upgraded.vercel.app](https://lifeline-ai-upgraded.vercel.app)  
-> **GitHub Repository**: [yashaswini-br0123/Lifeline-AI-Upgraded](https://github.com/yashaswini-br0123/Lifeline-AI-Upgraded)
+**Hack2Skill AI Code Submission Document**  
+**Vertical**: Healthcare & Clinical Decision Support  
+**Live Web Application**: [https://lifeline-ai-upgraded.vercel.app](https://lifeline-ai-upgraded.vercel.app)  
+**GitHub Repository**: [yashaswini-br0123/Lifeline-AI-Upgraded](https://github.com/yashaswini-br0123/Lifeline-AI-Upgraded)
 
 ---
 
-## 🎯 1. Chosen Vertical
+## 1. Chosen Vertical
 **Healthcare & Emergency Clinical Support**
 
 LifeLine AI is an end-to-end, AI-powered health management platform designed to bridge the gap between patient emergency symptoms, drug interaction safety, medical records storage, and clinical navigation.
 
 ---
 
-## 🧠 2. Approach & Logic
+## 2. Approach & Logic
 
 LifeLine AI approaches healthcare assistance through a multi-tier clinical intelligence framework:
 
@@ -37,12 +37,12 @@ LifeLine AI approaches healthcare assistance through a multi-tier clinical intel
 
 ---
 
-## ⚙️ 3. How the Solution Works
+## 3. How the Solution Works
 
 ### Technology Stack
 - **Framework**: Next.js 16 (App Router with Server & Client Components)
 - **Programming Language**: TypeScript (Strict type checking)
-- **AI Core**: Google Gemini API (`@google/genai` with `gemini-flash-latest`)
+- **AI Core**: Google Gemini API (`@google/genai` with `gemini-3.5-flash`)
 - **Speech Recognition**: Web Speech API (`webkitSpeechRecognition` / `SpeechRecognition`)
 - **Database & ORM**: Prisma ORM with SQLite database
 - **Authentication**: JWT signed session cookies with `bcryptjs` password hashing
@@ -69,7 +69,7 @@ LifeLine AI approaches healthcare assistance through a multi-tier clinical intel
 
 ---
 
-## 📋 4. Key Assumptions & Safety Guardrails
+## 4. Key Assumptions & Safety Guardrails
 
 1. **Emergency Callout Protocols**:
    - The AI is programmed with strict triage rules: any symptom indicating acute cardiac, respiratory, or neurologic failure immediately presents standard emergency service numbers (**112 / 108** in India).
@@ -80,23 +80,23 @@ LifeLine AI approaches healthcare assistance through a multi-tier clinical intel
 
 ---
 
-## 🛡️ 5. Evaluation Focus Areas
+## 5. Evaluation Focus Areas
 
-### 🔒 Security & Privacy
+### Security & Privacy
 - **Zero Exposed Secrets**: All AI calls execute strictly on the server-side via Next.js API routes (`src/app/api/...`). API keys are stored safely in `.env` environment variables and omitted from Git via `.gitignore`.
 - **Session Protection**: Passwords are hashed with `bcryptjs` before storage; sessions rely on `HttpOnly` `SameSite=Lax` JWT cookies.
 
-### ⚡ Efficiency & Resource Optimization
+### Efficiency & Resource Optimization
 - **Minimal Repository Footprint**: Complete source code zip archive size is **~101 KB (0.1 MB)**, well below the 10 MB limit.
 - **Fast Build**: Server-side page generation and static page optimization complete in seconds.
 
-### ♿ Accessibility & Inclusivity
+### Accessibility & Inclusivity
 - **Voice-Enabled Interface**: Integrated microphone recording for users in physical distress who cannot type.
 - **Accessible UI**: High-contrast slate theme, semantic HTML5 sectioning (`<header>`, `<aside>`, `<main>`), full keyboard focus states, and backdrop overlays for mobile drawer navigation.
 
 ---
 
-## 🚀 6. Getting Started & Local Setup
+## 6. Getting Started & Local Setup
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -130,7 +130,7 @@ LifeLine AI approaches healthcare assistance through a multi-tier clinical intel
 
 ---
 
-## 🧪 7. Verification & Testing
+## 7. Verification & Testing
 
 - **TypeScript Compilation Check**: `npx tsc --noEmit` — 0 Errors.
 - **Production Build Verification**: Successfully built and deployed to Vercel production.

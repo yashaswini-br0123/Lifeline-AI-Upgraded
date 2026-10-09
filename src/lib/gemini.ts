@@ -1,4 +1,6 @@
-const MODEL_NAME = "gemini-flash-latest";
+const MODEL_NAME = "gemini-3.5-flash";
+
+
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -317,24 +319,96 @@ CRITICAL REQUIREMENTS:
     }
     throw new Error("Invalid structure returned from Gemini");
   } catch (error) {
-    console.error("Error fetching first aid guidance from Gemini, using safe emergency fallback:", error);
-    const isSevere = /chest|heart|attack|breath|stroke|bleed|unconscious|chok/i.test(symptomDescription);
-    return {
-      emergencyType: isSevere ? "Severe Medical Emergency" : "First Aid & Symptom Guidance",
-      isLifeThreatening: isSevere,
-      warningAlert: isSevere 
-        ? "CRITICAL WARNING: Suspected life-threatening situation. Call 112 / 108 in India immediately without delay!" 
-        : "If symptoms worsen, become severe, or cause distress, contact local emergency services (112) immediately.",
-      steps: [
-        "Step 1: Immediately pause physical activity and position the person safely (sitting upright for breathing issues, lying flat with legs elevated for shock).",
-        "Step 2: Monitor vital signs (airway, breathing, pulse) and ensure adequate airflow around the person.",
-        "Step 3: Administer basic first aid: press clean cloth directly on bleeding wounds, or cool burns under running water for 10-15 minutes.",
-        "Step 4: Keep the person calm and warm. Do not administer oral medications or food unless instructed by emergency responders.",
-        "Step 5: Prepare emergency contact details and call 112 / 108 immediately if symptoms escalate."
-      ],
-      whenToCall112: "Call 112/108 immediately for chest tightness, severe breathlessness, profuse bleeding, or loss of consciousness."
-    };
+    console.error("Error fetching first aid guidance from Gemini, using symptom-specific fallback:", error);
+    const desc = symptomDescription.toLowerCase();
+
+    if (/burn|scald|heat|fire/i.test(desc)) {
+      return {
+        emergencyType: "Thermal Burn First Aid",
+        isLifeThreatening: false,
+        warningAlert: "Do not apply ice directly or pop blisters. If burn covers a large area or face, seek emergency care immediately.",
+        steps: [
+          "Step 1: Immediately remove the heat source and cool the burned area under cool running water for 10 to 20 minutes.",
+          "Step 2: Gently remove jewelry or tight clothing near the burn before swelling occurs (do not remove stuck clothing).",
+          "Step 3: Cover the burn loosely with sterile gauze or a clean, dry cloth to protect against infection.",
+          "Step 4: Take over-the-counter pain relievers (like acetaminophen or ibuprofen) if needed for pain relief.",
+          "Step 5: Seek urgent medical attention if blisters cover a large area, or if the burn turns white, charred, or leathery."
+        ],
+        whenToCall112: "Call 112/108 if the burn is chemical, electrical, involves the face or throat, or covers a large part of the body."
+      };
+    } else if (/tooth|dent|gum|jaw/i.test(desc)) {
+      return {
+        emergencyType: "Dental & Toothache Relief",
+        isLifeThreatening: false,
+        warningAlert: "Avoid placing aspirin directly against gums as it causes tissue burns. Schedule a dental evaluation as soon as possible.",
+        steps: [
+          "Step 1: Rinse your mouth thoroughly with warm salt water (half a teaspoon of salt in warm water) to clean the area.",
+          "Step 2: Gently use dental floss to remove any trapped food particles between the teeth.",
+          "Step 3: Apply a cold compress or ice pack wrapped in a cloth to the outside of your cheek for 15-minute intervals.",
+          "Step 4: Take over-the-counter pain relievers such as ibuprofen or acetaminophen as directed on the label.",
+          "Step 5: Avoid extremely hot, cold, or sugary foods, and contact a dentist promptly for treatment."
+        ],
+        whenToCall112: "Call emergency services or seek emergency room care if swelling spreads to your eye, neck, or causes difficulty swallowing or breathing."
+      };
+    } else if (/bleed|wound|cut|hemorrhage|blood/i.test(desc)) {
+      return {
+        emergencyType: "Bleeding & Deep Wound Care",
+        isLifeThreatening: desc.includes("severe") || desc.includes("heavy") || desc.includes("profuse"),
+        warningAlert: "Apply firm, continuous pressure to control bleeding. Do not remove soaked cloths—add more layers directly on top.",
+        steps: [
+          "Step 1: Apply direct, firm pressure on the wound using a clean cloth, towel, or sterile gauze pad.",
+          "Step 2: Maintain continuous pressure for at least 10 to 15 minutes without lifting the cloth to inspect.",
+          "Step 3: Elevate the bleeding limb above the level of the heart if possible while continuing firm pressure.",
+          "Step 4: Once bleeding slows, secure the bandage firmly with medical tape or a clean cloth wrap.",
+          "Step 5: Seek urgent clinical evaluation for deep cuts requiring sutures or tetanus immunization."
+        ],
+        whenToCall112: "Call 112/108 immediately if blood spurts continuously, bleeding persists after 15 mins of direct pressure, or victim feels faint."
+      };
+    } else if (/chok|airway|gasp|swallow/i.test(desc)) {
+      return {
+        emergencyType: "Choking & Airway Obstruction",
+        isLifeThreatening: true,
+        warningAlert: "URGENT: If the person cannot speak, cough, or breathe, perform Heimlich maneuver (abdominal thrusts) immediately!",
+        steps: [
+          "Step 1: Stand behind the person and lean them slightly forward. Give up to 5 sharp back blows between shoulder blades with heel of hand.",
+          "Step 2: If back blows fail, perform up to 5 abdominal thrusts: place fist above navel, grasp with other hand, thrust inward and upward.",
+          "Step 3: Alternate between 5 back blows and 5 abdominal thrusts until object is dislodged or person becomes unconscious.",
+          "Step 4: If person loses consciousness, lower gently to ground and begin CPR (30 chest compressions, check mouth before rescue breaths).",
+          "Step 5: Ensure emergency services (112) are dispatched immediately while continuing first aid."
+        ],
+        whenToCall112: "Call 112 / 108 immediately if choking is not resolved within seconds or if the victim loses consciousness."
+      };
+    } else if (/chest|heart|attack|pressure|arm pain|stroke/i.test(desc)) {
+      return {
+        emergencyType: "Suspected Myocardial Infarction / Chest Pain",
+        isLifeThreatening: true,
+        warningAlert: "CRITICAL: Call 112 / 108 immediately. Have the person sit down immediately and remain still.",
+        steps: [
+          "Step 1: Call 112 or 108 emergency hotline immediately and request an emergency medical team.",
+          "Step 2: Have the person stop all exertion and sit down in a comfortable position (sitting upright on floor against a wall).",
+          "Step 3: Loosen tight clothing around the neck, chest, and waist to ease breathing effort.",
+          "Step 4: Ask if patient has prescribed emergency medication (like nitroglycerin) or chewable aspirin if appropriate.",
+          "Step 5: Continuously monitor responsiveness and breathing until emergency medical responders arrive."
+        ],
+        whenToCall112: "Call 112 / 108 immediately for severe chest pressure, crushing pain radiating to arm/jaw, or shortness of breath."
+      };
+    } else {
+      return {
+        emergencyType: "General First Aid & Symptom Care",
+        isLifeThreatening: false,
+        warningAlert: "If symptoms worsen, become severe, or cause distress, contact local emergency medical services (112) immediately.",
+        steps: [
+          "Step 1: Pause physical activity and assist the person into a comfortable, safe sitting or lying position.",
+          "Step 2: Check vital signs (airway, breathing, alertness) and ensure fresh airflow around the individual.",
+          "Step 3: Administer basic symptom relief: apply cool compress for fever/pain, or offer small sips of water if fully conscious.",
+          "Step 4: Monitor closely for red-flag symptoms such as severe pain, dizziness, nausea, or breathing changes.",
+          "Step 5: Consult a healthcare professional or contact emergency service 112 if symptoms do not improve quickly."
+        ],
+        whenToCall112: "Call 112/108 immediately for severe chest pain, extreme breathlessness, sudden weakness, or loss of consciousness."
+      };
+    }
   }
+
 }
 
 
