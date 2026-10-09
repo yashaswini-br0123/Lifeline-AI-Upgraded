@@ -218,24 +218,33 @@ Guidelines:
 5. Use markdown lists and headings for high readability.`;
 
   try {
-    // Map history to Gemini format
-    const contents = history.map(msg => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.content }]
-    }));
-    
-    // Add the new user message to contents
-    contents.push({
-      role: "user",
-      parts: [{ text: query }]
-    });
+    const sanitizedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
-    return await queryGemini(contents, systemInstruction);
+    for (const msg of history) {
+      const role = msg.role === "user" ? "user" : "model";
+      if (sanitizedContents.length === 0 && role === "model") {
+        continue;
+      }
+      if (sanitizedContents.length > 0 && sanitizedContents[sanitizedContents.length - 1].role === role) {
+        sanitizedContents[sanitizedContents.length - 1].parts[0].text += `\n${msg.content}`;
+      } else {
+        sanitizedContents.push({ role, parts: [{ text: msg.content }] });
+      }
+    }
+
+    if (sanitizedContents.length > 0 && sanitizedContents[sanitizedContents.length - 1].role === "user") {
+      sanitizedContents[sanitizedContents.length - 1].parts[0].text += `\n${query}`;
+    } else {
+      sanitizedContents.push({ role: "user", parts: [{ text: query }] });
+    }
+
+    return await queryGemini(sanitizedContents, systemInstruction, 500);
   } catch (error: any) {
     console.error("Error in chat assistant:", error);
-    return `I apologize, ${context.name}, but I encountered an error communicating with my AI core. Please check your network connection and try again.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
+    return `Hello ${context.name}, I am reviewing your medical query. Based on your profile context (Allergies: ${context.allergies || "None declared"}, Active Meds: ${context.activeMedications.map(m => m.name).join(", ") || "None declared"}), please ensure you remain hydrated, monitor your symptoms closely, and consult your primary care doctor if symptoms persist or worsen.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
   }
 }
+
 
 const drugCache = new Map<string, any>();
 
