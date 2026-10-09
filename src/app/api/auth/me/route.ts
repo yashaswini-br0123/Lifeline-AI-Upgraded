@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { verifySession, signSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const DEMO_USER = {
   id: "demo-user-id-123",
   email: "patient@lifeline.ai",

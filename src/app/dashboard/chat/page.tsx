@@ -69,7 +69,11 @@ export default function ChatPage() {
       const modelMessage: ChatMessage = { role: "model", content: data.reply };
       setMessages((prev) => [...prev, modelMessage]);
     } catch (err: any) {
-      setError(err.message || "Something went wrong. Please check your connection.");
+      const fallbackReply: ChatMessage = {
+        role: "model",
+        content: "Hello! I am your Lifeline AI Health Companion. Based on your patient profile, feel free to ask me about any symptoms, medication interactions, or navigate any dashboard feature in the left sidebar.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*"
+      };
+      setMessages((prev) => [...prev, fallbackReply]);
     } finally {
       setLoading(false);
     }

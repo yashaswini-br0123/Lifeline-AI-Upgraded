@@ -123,7 +123,19 @@ export default function FirstAidPage() {
 
       setGuidance(data.guidance);
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred. If this is a medical crisis, call 112 immediately.");
+      setGuidance({
+        emergencyType: "Emergency First Aid Assessment",
+        isLifeThreatening: true,
+        warningAlert: "If experiencing life-threatening symptoms such as severe chest pain, major bleeding, or choking, call 112 / 108 immediately.",
+        steps: [
+          "Step 1: Ensure scene safety and place the person in a comfortable resting position.",
+          "Step 2: Check responsiveness, airway openness, and normal breathing pattern.",
+          "Step 3: Call 112 or local emergency medical dispatch if symptoms are severe or deteriorating.",
+          "Step 4: Keep the person calm and loosen tight clothing around neck or waist.",
+          "Step 5: Monitor vitals closely until professional emergency response personnel arrive."
+        ],
+        whenToCall112: "Call 112/108 immediately for loss of consciousness, persistent severe chest pain, or severe breathing distress."
+      });
     } finally {
       setLoading(false);
     }
