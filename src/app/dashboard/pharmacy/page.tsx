@@ -10,15 +10,16 @@ import {
   CreditCard,
   CheckCircle,
   Truck,
-  HeartPulse,
-  DollarSign,
+  Zap,
   BriefcaseMedical,
   MapPin,
   Phone,
   QrCode,
-  ShieldCheck,
-  Zap,
-  Loader2,
+  ExternalLink,
+  Copy,
+  Check,
+  ArrowRight,
+  ShieldCheck
 } from "lucide-react";
 
 interface Product {
@@ -63,7 +64,11 @@ export default function PharmacyPage() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "cod" | "card">("upi");
-  const [orderStatus, setOrderStatus] = useState<"idle" | "placing" | "success">("idle");
+  const [selectedUpiApp, setSelectedUpiApp] = useState<"phonepe" | "gpay" | "paytm" | "bhim" | "mobikwik" | "qr">("phonepe");
+  const [showUpiModal, setShowUpiModal] = useState(false);
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  
+  const [orderStatus, setOrderStatus] = useState<"idle" | "placing" | "upi_pending" | "success">("idle");
   const [orderId, setOrderId] = useState("");
 
   const addToCart = (product: Product) => {
@@ -76,7 +81,6 @@ export default function PharmacyPage() {
       }
       return [...prev, { product, quantity: 1 }];
     });
-    // Open cart automatically when an item is added
     setShowCartDrawer(true);
   };
 
@@ -100,8 +104,31 @@ export default function PharmacyPage() {
 
   const getCartTotal = () => {
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-    const deliveryFee = subtotal > 500 || subtotal === 0 ? 0 : 35;
+    const deliveryFee = subtotal > 0 ? 5 : 0; // Fixed flat delivery fee: ₹5
     return { subtotal, deliveryFee, total: subtotal + deliveryFee };
+  };
+
+  const cartTotalInfo = getCartTotal();
+  const upiId = "lifelineai@upi";
+
+  const getUpiDeepLink = (app: string) => {
+    const amount = cartTotalInfo.total;
+    const note = encodeURIComponent(`Pharmacy Order ${orderId || 'LL-999'}`);
+    const recipient = "lifelineai@upi";
+    const name = encodeURIComponent("Lifeline AI Pharmacy");
+
+    switch (app) {
+      case "phonepe":
+        return `phonepe://pay?pa=${recipient}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+      case "gpay":
+        return `tez://upi/pay?pa=${recipient}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+      case "paytm":
+        return `paytmmp://pay?pa=${recipient}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+      case "bhim":
+        return `bhim://pay?pa=${recipient}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+      default:
+        return `upi://pay?pa=${recipient}&pn=${name}&am=${amount}&tn=${note}&cu=INR`;
+    }
   };
 
   const handlePlaceOrder = (e: React.FormEvent) => {
@@ -111,31 +138,51 @@ export default function PharmacyPage() {
       return;
     }
 
-    setOrderStatus("placing");
-    
-    // Simulate payment api delay
-    setTimeout(() => {
-      const randomId = "LL-" + Math.floor(100000 + Math.random() * 900000);
-      setOrderId(randomId);
-      setOrderStatus("success");
-    }, 1500);
+    const randomId = "LL-" + Math.floor(100000 + Math.random() * 900000);
+    setOrderId(randomId);
+
+    if (paymentMethod === "upi") {
+      setShowCheckoutModal(false);
+      setShowUpiModal(true);
+      setOrderStatus("upi_pending");
+    } else {
+      setOrderStatus("placing");
+      setTimeout(() => {
+        setOrderStatus("success");
+      }, 1500);
+    }
+  };
+
+  const confirmUpiPayment = () => {
+    setShowUpiModal(false);
+    setShowCheckoutModal(true);
+    setOrderStatus("success");
+  };
+
+  const copyUpiId = () => {
+    navigator.clipboard.writeText(upiId);
+    setCopiedUpi(true);
+    setTimeout(() => setCopiedUpi(false), 2000);
   };
 
   const resetStore = () => {
     setCart([]);
     setShowCheckoutModal(false);
+    setShowUpiModal(false);
     setShowCartDrawer(false);
     setOrderStatus("idle");
     setDeliveryAddress("");
     setPhoneNumber("");
     setPaymentMethod("upi");
+    setSelectedUpiApp("phonepe");
   };
 
   const filteredProducts = selectedCategory === "All" 
     ? PHARMACY_PRODUCTS 
     : PHARMACY_PRODUCTS.filter(p => p.category === selectedCategory);
 
-  const cartTotalInfo = getCartTotal();
+  const qrData = encodeURIComponent(`upi://pay?pa=${upiId}&pn=Lifeline+AI+Pharmacy&am=${cartTotalInfo.total}&tn=Pharmacy+Order+${orderId}&cu=INR`);
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${qrData}`;
 
   return (
     <div className="flex-1 p-6 md:p-10 space-y-8 bg-slate-950 text-slate-100 min-h-full relative overflow-y-auto">
@@ -158,7 +205,7 @@ export default function PharmacyPage() {
           onClick={() => setShowCartDrawer(true)}
           className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500/35 hover:bg-slate-900 text-sm font-bold text-white transition-all cursor-pointer relative"
         >
-          <ShoppingBag className="w-4 h-4 text-emerald-450" />
+          <ShoppingBag className="w-4 h-4 text-emerald-400" />
           My Basket
           {cart.length > 0 && (
             <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-[10px] text-white flex items-center justify-center font-extrabold shadow-md animate-pulse">
@@ -173,12 +220,12 @@ export default function PharmacyPage() {
         <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400 animate-pulse">
           <Zap className="w-5 h-5" />
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-            Superfast 24/7 Doorstep Delivery
+            Superfast 24/7 Doorstep Delivery &bull; Flat ₹5 Shipping Fee
           </h3>
-          <p className="text-xs text-slate-450 leading-relaxed font-light mt-0.5">
-            Emergency bandage, paracetamol, or blood glucose monitor needed? Choose items and checkout. Delivery partner will reach in 12-15 minutes.
+          <p className="text-xs text-slate-400 leading-relaxed font-light mt-0.5">
+            Select emergency medicines, bandages, or diagnostic monitors. Express delivery partner reaches your location in 12-15 minutes.
           </p>
         </div>
       </div>
@@ -214,16 +261,16 @@ export default function PharmacyPage() {
                   prod.category === "Medication" 
                     ? "bg-purple-500/10 border-purple-500/20 text-purple-400" 
                     : prod.category === "First Aid"
-                    ? "bg-rose-500/10 border-rose-500/20 text-rose-455"
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
                     : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
                 }`}>
                   {prod.category}
                 </span>
-                <span className="text-[10px] text-slate-550 italic font-mono">{prod.unit}</span>
+                <span className="text-[10px] text-slate-500 italic font-mono">{prod.unit}</span>
               </div>
               <div>
                 <h3 className="font-extrabold text-sm text-white group-hover:text-emerald-400 transition-colors leading-snug">{prod.name}</h3>
-                <p className="text-[11px] text-slate-450 leading-relaxed font-light mt-1.5">{prod.description}</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed font-light mt-1.5">{prod.description}</p>
               </div>
             </div>
 
@@ -246,17 +293,13 @@ export default function PharmacyPage() {
       {/* Cart Slide-Out Drawer overlay */}
       {showCartDrawer && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm">
-          {/* Dismiss Click area */}
           <div className="flex-1" onClick={() => setShowCartDrawer(false)} />
           
-          {/* Drawer body */}
           <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full flex flex-col justify-between p-6 shadow-2xl relative animate-slideLeft">
-            
-            {/* Drawer Header */}
             <div>
               <button
                 onClick={() => setShowCartDrawer(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-450 hover:text-white cursor-pointer"
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
@@ -272,8 +315,8 @@ export default function PharmacyPage() {
               {cart.length === 0 ? (
                 <div className="text-center py-20 space-y-3">
                   <ShoppingBag className="w-10 h-10 text-slate-700 mx-auto" />
-                  <p className="text-xs font-bold text-slate-450">Your basket is currently empty.</p>
-                  <p className="text-[10px] text-slate-550 leading-relaxed px-6">Add medical products or first aid items to configure an express delivery order.</p>
+                  <p className="text-xs font-bold text-slate-400">Your basket is currently empty.</p>
+                  <p className="text-[10px] text-slate-500 leading-relaxed px-6">Add medical products or first aid items to configure an express delivery order.</p>
                 </div>
               ) : (
                 cart.map((item) => (
@@ -302,7 +345,7 @@ export default function PharmacyPage() {
                       
                       <button
                         onClick={() => removeFromCart(item.product.id)}
-                        className="p-2 text-slate-500 hover:text-rose-455 transition-colors cursor-pointer"
+                        className="p-2 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -322,20 +365,11 @@ export default function PharmacyPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Express Delivery (15 mins)</span>
-                    {cartTotalInfo.deliveryFee === 0 ? (
-                      <span className="text-emerald-400 font-extrabold uppercase text-[10px]">Free Shipping</span>
-                    ) : (
-                      <span className="text-white font-bold">₹{cartTotalInfo.deliveryFee}</span>
-                    )}
+                    <span className="text-emerald-400 font-extrabold text-xs">₹{cartTotalInfo.deliveryFee}</span>
                   </div>
-                  {cartTotalInfo.subtotal < 500 && (
-                    <p className="text-[10px] text-slate-550 text-right italic">
-                      Add items worth ₹{500 - cartTotalInfo.subtotal} more for Free Delivery!
-                    </p>
-                  )}
                   <div className="flex items-center justify-between text-sm font-black border-t border-slate-900 pt-2.5 mt-1">
                     <span className="text-white">Total Amount</span>
-                    <span className="text-emerald-405 text-base">₹{cartTotalInfo.total}</span>
+                    <span className="text-emerald-400 text-base">₹{cartTotalInfo.total}</span>
                   </div>
                 </div>
 
@@ -348,7 +382,6 @@ export default function PharmacyPage() {
                 </button>
               </div>
             )}
-
           </div>
         </div>
       )}
@@ -360,7 +393,7 @@ export default function PharmacyPage() {
             {orderStatus !== "success" && (
               <button
                 onClick={() => setShowCheckoutModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-450 hover:text-white cursor-pointer"
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
@@ -373,7 +406,7 @@ export default function PharmacyPage() {
                     <BriefcaseMedical className="w-5 h-5 text-emerald-400" />
                     Express Checkout
                   </h2>
-                  <p className="text-xs text-slate-450 leading-normal">
+                  <p className="text-xs text-slate-400 leading-normal">
                     Enter delivery location and select your payment method.
                   </p>
                 </div>
@@ -390,7 +423,7 @@ export default function PharmacyPage() {
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
                       placeholder="Flat No, Wing, Apartment/Building, Sector, Nearby Landmark, City..."
-                      className="w-full h-20 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 outline-none text-xs text-white transition-all placeholder:text-slate-650 resize-none"
+                      className="w-full h-20 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 outline-none text-xs text-white transition-all placeholder:text-slate-600 resize-none"
                     />
                   </div>
 
@@ -406,7 +439,7 @@ export default function PharmacyPage() {
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="e.g. +91 98765 43210"
-                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 outline-none text-sm text-white transition-all placeholder:text-slate-650"
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 outline-none text-sm text-white transition-all placeholder:text-slate-600"
                     />
                   </div>
 
@@ -424,7 +457,7 @@ export default function PharmacyPage() {
                         }`}
                       >
                         <QrCode className="w-5 h-5 mx-auto" />
-                        <span className="text-[10px] font-bold block">UPI Scan</span>
+                        <span className="text-[10px] font-bold block">UPI Payment</span>
                       </button>
                       <button
                         type="button"
@@ -453,10 +486,50 @@ export default function PharmacyPage() {
                     </div>
                   </div>
 
+                  {/* UPI App Selection Sub-Panel */}
+                  {paymentMethod === "upi" && (
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                      <label className="text-[11px] font-bold text-slate-350 block">Select UPI App / Scanner:</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: "phonepe", name: "PhonePe", color: "bg-purple-900/30 text-purple-300 border-purple-700/40" },
+                          { id: "gpay", name: "Google Pay", color: "bg-blue-900/30 text-blue-300 border-blue-700/40" },
+                          { id: "paytm", name: "Paytm", color: "bg-cyan-900/30 text-cyan-300 border-cyan-700/40" },
+                          { id: "bhim", name: "BHIM UPI", color: "bg-amber-900/30 text-amber-300 border-amber-700/40" },
+                          { id: "mobikwik", name: "MobiKwik", color: "bg-emerald-900/30 text-emerald-300 border-emerald-700/40" },
+                          { id: "qr", name: "UPI QR Scan", color: "bg-slate-800/40 text-slate-200 border-slate-700/40" },
+                        ].map((app) => (
+                          <button
+                            key={app.id}
+                            type="button"
+                            onClick={() => setSelectedUpiApp(app.id as any)}
+                            className={`px-2.5 py-2 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                              selectedUpiApp === app.id
+                                ? `${app.color} ring-2 ring-emerald-400/50`
+                                : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                            }`}
+                          >
+                            <span>{app.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pricing Total */}
-                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5 flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-450">Payable Amount:</span>
-                    <span className="text-emerald-405 text-sm font-black">₹{cartTotalInfo.total}</span>
+                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5 space-y-1">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Items Subtotal:</span>
+                      <span className="text-white font-semibold">₹{cartTotalInfo.subtotal}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Delivery Fee:</span>
+                      <span className="text-emerald-400 font-bold">₹{cartTotalInfo.deliveryFee}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-slate-900">
+                      <span className="text-slate-350">Payable Amount:</span>
+                      <span className="text-emerald-400 text-sm font-black">₹{cartTotalInfo.total}</span>
+                    </div>
                   </div>
 
                   {/* Submit */}
@@ -467,16 +540,6 @@ export default function PharmacyPage() {
                     Place Order & Pay
                   </button>
                 </form>
-              </div>
-            )}
-
-            {orderStatus === "placing" && (
-              <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                <Loader2 className="w-10 h-10 animate-spin text-emerald-400" />
-                <div className="text-center space-y-1">
-                  <h3 className="font-bold text-sm text-white">Contacting Payment Gateway...</h3>
-                  <p className="text-[11px] text-slate-400 font-light">Securing clinical order transaction logs.</p>
-                </div>
               </div>
             )}
 
@@ -512,7 +575,128 @@ export default function PharmacyPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
 
+      {/* Dedicated UPI Scanner & Direct App Payment Modal */}
+      {showUpiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6 text-center animate-scaleUp">
+            <button
+              onClick={() => {
+                setShowUpiModal(false);
+                setShowCheckoutModal(true);
+                setOrderStatus("idle");
+              }}
+              className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-4.5 h-4.5" />
+            </button>
+
+            <div className="space-y-1 text-center">
+              <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 uppercase tracking-wider">
+                UPI Payment Request
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">Scan or Open UPI App to Pay</h2>
+              <p className="text-xs text-slate-400">Order ID: <span className="font-mono text-white font-bold">{orderId}</span> &bull; Total Amount: <strong className="text-emerald-400">₹{cartTotalInfo.total}</strong></p>
+            </div>
+
+            {/* Generated Dynamic QR Code */}
+            <div className="bg-white p-4 rounded-2xl w-52 h-52 mx-auto flex items-center justify-center shadow-lg border border-slate-700 relative group">
+              <img
+                src={qrCodeUrl}
+                alt="UPI Payment QR Code Scanner"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1">
+              <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+              Scan with PhonePe, Google Pay, Paytm, BHIM, or any camera app
+            </p>
+
+            {/* Direct UPI App Launch Buttons */}
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <label className="text-[11px] font-extrabold text-slate-400 uppercase block tracking-wider text-left">
+                Direct App Payment:
+              </label>
+              
+              <div className="grid grid-cols-2 gap-2.5">
+                <a
+                  href={getUpiDeepLink("phonepe")}
+                  className="py-2.5 px-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open PhonePe
+                </a>
+                
+                <a
+                  href={getUpiDeepLink("gpay")}
+                  className="py-2.5 px-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open Google Pay
+                </a>
+
+                <a
+                  href={getUpiDeepLink("paytm")}
+                  className="py-2.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open Paytm
+                </a>
+
+                <a
+                  href={getUpiDeepLink("bhim")}
+                  className="py-2.5 px-3 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open BHIM UPI
+                </a>
+              </div>
+
+              {/* Generic UPI Link */}
+              <a
+                href={getUpiDeepLink("generic")}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-1"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                Open Any Installed UPI App
+              </a>
+            </div>
+
+            {/* UPI ID copy field */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
+              <div className="text-left">
+                <span className="text-[10px] text-slate-500 block">UPI ID / VPA:</span>
+                <span className="font-mono text-xs font-bold text-emerald-400">{upiId}</span>
+              </div>
+              <button
+                onClick={copyUpiId}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-700 text-[11px] font-bold text-white flex items-center gap-1 cursor-pointer transition-all"
+              >
+                {copiedUpi ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                    Copy ID
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Confirm Payment Action Button */}
+            <button
+              onClick={confirmUpiPayment}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 font-extrabold text-white text-sm shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShieldCheck className="w-4.5 h-4.5" />
+              I Have Paid ₹{cartTotalInfo.total} &bull; Confirm Order
+            </button>
           </div>
         </div>
       )}
