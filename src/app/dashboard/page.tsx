@@ -79,7 +79,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            Hello, {user?.name || "Patient"}
+            Hello
           </h1>
           <p className="text-slate-400 text-sm">Here is your health tracker overview for today.</p>
         </div>

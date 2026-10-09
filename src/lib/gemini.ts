@@ -278,7 +278,7 @@ Guidelines:
       return `To use **First Aid Health Assistance**:\n\n1. Click **First Aid Assistance** in the left sidebar menu.\n2. Describe your emergency by typing or clicking the **Microphone button** for voice input.\n3. Or click any Quick Emergency Preset (Chest Pain, Thermal Burn, Deep Bleeding, Choking, Toothache).\n4. Click **Get 5-Step First Aid Instructions** for clear, step-by-step guidance.\n\n*Disclaimer: For life-threatening emergencies, call 112 / 108 immediately.*`;
     }
 
-    return `Hello ${context.name}, I am your Lifeline AI Health Companion. Based on your patient profile (Allergies: ${context.allergies || "None declared"}, Active Meds: ${context.activeMedications.map(m => m.name).join(", ") || "None declared"}), feel free to ask me about any symptoms, medication interactions, or navigate any dashboard feature in the left sidebar.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
+    return `Hello! I am your Lifeline AI Health Companion. Based on your patient profile (Allergies: ${context.allergies || "None declared"}, Active Meds: ${context.activeMedications.map(m => m.name).join(", ") || "None declared"}), feel free to ask me about any symptoms, medication interactions, or navigate any dashboard feature in the left sidebar.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
   }
 }
 
