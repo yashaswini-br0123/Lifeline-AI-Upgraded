@@ -18,8 +18,10 @@ import {
   ExternalLink,
   Copy,
   Check,
-  ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  User,
+  Calendar
 } from "lucide-react";
 
 interface Product {
@@ -64,10 +66,18 @@ export default function PharmacyPage() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "cod" | "card">("upi");
+  
+  // UPI Sub-states
   const [selectedUpiApp, setSelectedUpiApp] = useState<"phonepe" | "gpay" | "paytm" | "bhim" | "mobikwik" | "qr">("phonepe");
   const [showUpiModal, setShowUpiModal] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
-  
+
+  // Card Sub-states
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardPin, setCardPin] = useState("");
+
   const [orderStatus, setOrderStatus] = useState<"idle" | "placing" | "upi_pending" | "success">("idle");
   const [orderId, setOrderId] = useState("");
 
@@ -138,6 +148,18 @@ export default function PharmacyPage() {
       return;
     }
 
+    if (paymentMethod === "card") {
+      const cleanNum = cardNumber.replace(/\s/g, "");
+      if (cleanNum.length < 16) {
+        alert("Please enter a valid 16-digit Card Number.");
+        return;
+      }
+      if (!cardPin || cardPin.length < 3) {
+        alert("Please enter a valid Card PIN / CVV.");
+        return;
+      }
+    }
+
     const randomId = "LL-" + Math.floor(100000 + Math.random() * 900000);
     setOrderId(randomId);
 
@@ -175,6 +197,10 @@ export default function PharmacyPage() {
     setPhoneNumber("");
     setPaymentMethod("upi");
     setSelectedUpiApp("phonepe");
+    setCardNumber("");
+    setCardName("");
+    setCardExpiry("");
+    setCardPin("");
   };
 
   const filteredProducts = selectedCategory === "All" 
@@ -512,6 +538,94 @@ export default function PharmacyPage() {
                             <span>{app.name}</span>
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Card Entry Sub-Panel */}
+                  {paymentMethod === "card" && (
+                    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                      <label className="text-[11px] font-bold text-slate-350 flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                        Enter Card & PIN Information:
+                      </label>
+
+                      {/* Card Number */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">16-Digit Card Number</span>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            maxLength={19}
+                            value={cardNumber}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 16);
+                              const formatted = val.replace(/(.{4})/g, "$1 ").trim();
+                              setCardNumber(formatted);
+                            }}
+                            placeholder="4532 8912 3456 7890"
+                            className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-emerald-500 outline-none text-xs font-mono text-white placeholder:text-slate-650"
+                          />
+                          <CreditCard className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                        </div>
+                      </div>
+
+                      {/* Cardholder Name */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 block font-medium">Cardholder Name</span>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value)}
+                            placeholder="Name as printed on card"
+                            className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-emerald-500 outline-none text-xs text-white placeholder:text-slate-650"
+                          />
+                          <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                        </div>
+                      </div>
+
+                      {/* Expiry & PIN / CVV Grid */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 block font-medium">Expiry (MM/YY)</span>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              required
+                              maxLength={5}
+                              value={cardExpiry}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                                if (val.length >= 3) {
+                                  val = val.slice(0, 2) + "/" + val.slice(2);
+                                }
+                                setCardExpiry(val);
+                              }}
+                              placeholder="MM/YY"
+                              className="w-full pl-8 pr-2 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-emerald-500 outline-none text-xs font-mono text-white placeholder:text-slate-650 text-center"
+                            />
+                            <Calendar className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 block font-medium">ATM PIN / CVV</span>
+                          <div className="relative">
+                            <input
+                              type="password"
+                              required
+                              maxLength={4}
+                              value={cardPin}
+                              onChange={(e) => setCardPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                              placeholder="****"
+                              className="w-full pl-8 pr-2 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-emerald-500 outline-none text-xs font-mono text-white placeholder:text-slate-650 text-center tracking-widest"
+                            />
+                            <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-3" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
