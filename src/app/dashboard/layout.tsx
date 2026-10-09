@@ -17,6 +17,7 @@ import {
   Loader2,
   Search,
   ShoppingBag,
+  HeartPulse,
 } from "lucide-react";
 
 export interface UserProfile {
@@ -106,6 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "AI Companion", href: "/dashboard/chat", icon: MessageSquare },
+    { name: "First Aid Assistance", href: "/dashboard/first-aid", icon: HeartPulse },
     { name: "Drug Research", href: "/dashboard/research", icon: Search },
     { name: "Online Pharmacy", href: "/dashboard/pharmacy", icon: ShoppingBag },
     { name: "Medications", href: "/dashboard/medications", icon: Pill },

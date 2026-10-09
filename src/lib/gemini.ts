@@ -252,3 +252,65 @@ Ensure your response is valid JSON only. Do not wrap it in markdown code blocks.
     throw error;
   }
 }
+
+export interface FirstAidResponse {
+  emergencyType: string;
+  isLifeThreatening: boolean;
+  warningAlert: string;
+  steps: string[];
+  whenToCall112: string;
+}
+
+/**
+ * Fetch structured 5-step emergency first-aid advice from Gemini
+ */
+export async function getFirstAidGuidance(symptomDescription: string): Promise<FirstAidResponse> {
+  const prompt = `A user or bystander is describing a medical emergency or physical symptom:
+"${symptomDescription}"
+
+Assess the emergency and provide emergency first-aid assistance in the following structured JSON format:
+{
+  "emergencyType": "Name of identified emergency (e.g., Suspected Heart Attack, Severe Thermal Burn, Deep Bleeding Wound, Choking, Toothache, Allergic Reaction)",
+  "isLifeThreatening": true or false (set to true for heart attack, severe chest pain, stroke, severe breathing difficulty, major blood loss, or unconsciousness),
+  "warningAlert": "An urgent warning statement. If life-threatening, instruct the user to call 112 in India immediately without waiting.",
+  "steps": [
+    "Step 1: Immediate action or positioning...",
+    "Step 2: Practical first-aid procedure...",
+    "Step 3: Monitoring or secondary care...",
+    "Step 4: Symptom management or precautions to avoid...",
+    "Step 5: Transition to medical care or ambulance arrival protocol..."
+  ],
+  "whenToCall112": "Critical red-flag symptoms requiring immediate emergency dispatch (112 / 108)."
+}
+
+CRITICAL REQUIREMENTS:
+1. "steps" MUST contain EXACTLY 5 clear, numbered, easy-to-understand first-aid instructions written in simple language.
+2. If life-threatening (e.g. chest pain, heart attack, breathing difficulty, severe bleeding), emphasize calling 112 immediately in India.
+3. Do not offer a formal medical diagnosis. Focus strictly on safe, actionable first-aid steps.
+4. Ensure the output is valid raw JSON only. Do not wrap in markdown code blocks.`;
+
+  const systemInstruction = "You are an emergency medical first-aid protocol AI. Provide 5 clear, practical, life-saving first-aid steps in simple language. Highlight calling 112 in India for severe symptoms.";
+
+  try {
+    const contents = [{ role: "user", parts: [{ text: prompt }] }];
+    const rawResult = await queryGemini(contents, systemInstruction);
+
+    let cleanJson = rawResult.trim();
+    if (cleanJson.startsWith("```json")) {
+      cleanJson = cleanJson.slice(7);
+    }
+    if (cleanJson.startsWith("```")) {
+      cleanJson = cleanJson.slice(3);
+    }
+    if (cleanJson.endsWith("```")) {
+      cleanJson = cleanJson.slice(0, -3);
+    }
+    cleanJson = cleanJson.trim();
+
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error("Error fetching first aid guidance from Gemini:", error);
+    throw error;
+  }
+}
+

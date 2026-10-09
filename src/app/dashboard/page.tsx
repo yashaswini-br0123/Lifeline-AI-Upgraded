@@ -22,6 +22,7 @@ import {
   MapPin,
   Droplet,
   Building,
+  HeartPulse,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -126,7 +127,7 @@ export default function DashboardPage() {
           {/* Quick Actions Panel */}
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-white">Quick Actions</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Link
                 href="/dashboard/chat"
                 className="flex items-start gap-4 p-5 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-cyan-500/20 hover:bg-slate-900/60 transition-all group"
@@ -137,6 +138,18 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="font-bold text-sm group-hover:text-cyan-400 transition-colors">Consult AI Companion</h3>
                   <p className="text-xs text-slate-400 leading-relaxed mt-1">Get instant insights regarding symptoms, report analyses, and medicine guidance.</p>
+                </div>
+              </Link>
+              <Link
+                href="/dashboard/first-aid"
+                className="flex items-start gap-4 p-5 rounded-2xl bg-slate-900/40 border border-slate-800 hover:border-rose-500/20 hover:bg-slate-900/60 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0 border border-rose-500/20">
+                  <HeartPulse className="w-5 h-5 text-rose-400 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm group-hover:text-rose-400 transition-colors">First Aid Assistance</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed mt-1">Get 5-step emergency instructions for burns, chest pain, bleeding, or choking.</p>
                 </div>
               </Link>
               <Link
