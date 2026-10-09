@@ -24,11 +24,6 @@ export async function GET() {
     return NextResponse.json({ medications: [] });
   }
 }
-  } catch (error) {
-    console.error("Fetch medications error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
 
 export async function POST(request: Request) {
   try {

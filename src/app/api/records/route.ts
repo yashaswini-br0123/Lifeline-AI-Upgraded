@@ -24,11 +24,6 @@ export async function GET() {
     return NextResponse.json({ records: [] });
   }
 }
-  } catch (error) {
-    console.error("Fetch records error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
 
 export async function POST(request: Request) {
   try {
