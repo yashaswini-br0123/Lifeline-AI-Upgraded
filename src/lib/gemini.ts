@@ -33,55 +33,70 @@ function extractJson(rawText: string): any {
   return JSON.parse(text);
 }
 
+const MODEL_FALLBACKS = [
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.7-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-lite-latest"
+];
+
 async function queryGemini(
   contents: Array<{ role: string; parts: Array<{ text: string }> }>,
   systemInstruction?: string,
-  maxOutputTokens: number = 600
+  maxOutputTokens: number = 800
 ): Promise<string> {
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not defined in environment variables.");
   }
-  
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-  
-  const body: any = {
-    contents,
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens
+
+  let lastError: any = null;
+
+  for (const model of MODEL_FALLBACKS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body: any = {
+        contents,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens
+        }
+      };
+
+      if (systemInstruction) {
+        body.systemInstruction = {
+          parts: [{ text: systemInstruction }]
+        };
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`Model ${model} returned HTTP ${response.status}: ${errorText.slice(0, 100)}`);
+        lastError = new Error(`Gemini API error (${response.status}): ${errorText}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text && text.trim()) {
+        return text.trim();
+      }
+    } catch (err) {
+      console.warn(`Fetch error for model ${model}:`, err);
+      lastError = err;
     }
-  };
-
-  if (systemInstruction) {
-    body.systemInstruction = {
-      parts: [
-        { text: systemInstruction }
-      ]
-    };
   }
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Empty response from Gemini API");
-  }
-
-  return text;
+  throw lastError || new Error("All Gemini models failed to respond");
 }
+
 
 
 
@@ -237,9 +252,36 @@ Guidelines:
     return await queryGemini(sanitizedContents, systemInstruction, 1500);
   } catch (error: any) {
     console.error("Error in chat assistant:", error);
-    return `Hello ${context.name}, to use the **First Aid Health Assistance** feature:\n\n1. Click **First Aid Assistance** in the left sidebar menu.\n2. Describe your medical emergency by typing or clicking the **Microphone button** for hands-free voice input.\n3. Or select one of the Quick Emergency Presets (e.g., Chest Pain, Thermal Burn, Deep Bleeding, Choking, Toothache).\n4. Click **Get 5-Step First Aid Instructions** to view clear, step-by-step guidance.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
+    const q = query.toLowerCase();
+
+    if (q.includes("pharmacy") || q.includes("buy") || q.includes("order")) {
+      return `To use the **Online Pharmacy**:\n\n1. Click **Online Pharmacy** in the left sidebar menu.\n2. Browse over-the-counter medications, health supplements, and healthcare products.\n3. Select your items and proceed to checkout for convenient delivery.\n\n*Disclaimer: Always consult a licensed doctor or pharmacist before starting new medications.*`;
+    }
+
+    if (q.includes("drug") || q.includes("research") || q.includes("side effect") || q.includes("interaction")) {
+      return `To use **Drug Research**:\n\n1. Click **Drug Research** in the left sidebar menu.\n2. Search any generic or brand medication name (e.g., Paracetamol, Aspirin, Amoxicillin).\n3. Access comprehensive clinical profiles including therapeutic uses, standard adult dosage, side effects, and precautions.\n\n*Disclaimer: I am an AI health companion, not a doctor. Consult a physician for medical advice.*`;
+    }
+
+    if (q.includes("appointment") || q.includes("doctor") || q.includes("book") || q.includes("schedule")) {
+      return `To manage **Appointments**:\n\n1. Click **Appointments** in the left sidebar menu.\n2. View upcoming consultations or click **Schedule New Appointment**.\n3. Choose your medical specialty, doctor, date, and preferred time slot.\n\n*Disclaimer: For immediate life-threatening medical emergencies, call 112/108 instead of scheduling an appointment.*`;
+    }
+
+    if (q.includes("record") || q.includes("upload") || q.includes("lab") || q.includes("report")) {
+      return `To use **Medical Records**:\n\n1. Click **Medical Records** in the left sidebar menu.\n2. Upload your lab reports, prescriptions, or discharge summaries.\n3. Lifeline AI automatically categorizes your files and generates an instant AI summary.\n\n*Disclaimer: Maintain physical copies of critical medical documents for clinical visits.*`;
+    }
+
+    if (q.includes("medication") || q.includes("pill") || q.includes("tracker")) {
+      return `To manage **Medications & Pill Tracker**:\n\n1. Click **Medications** in the left sidebar menu.\n2. Log your active prescriptions, dosage amounts, and intake schedules.\n3. The Drug Interaction Guard automatically checks for conflicts with your allergies or existing prescriptions.\n\n*Disclaimer: Never adjust prescription dosages without consulting your prescribing physician.*`;
+    }
+
+    if (q.includes("first aid") || q.includes("emergency")) {
+      return `To use **First Aid Health Assistance**:\n\n1. Click **First Aid Assistance** in the left sidebar menu.\n2. Describe your emergency by typing or clicking the **Microphone button** for voice input.\n3. Or click any Quick Emergency Preset (Chest Pain, Thermal Burn, Deep Bleeding, Choking, Toothache).\n4. Click **Get 5-Step First Aid Instructions** for clear, step-by-step guidance.\n\n*Disclaimer: For life-threatening emergencies, call 112 / 108 immediately.*`;
+    }
+
+    return `Hello ${context.name}, I am your Lifeline AI Health Companion. Based on your patient profile (Allergies: ${context.allergies || "None declared"}, Active Meds: ${context.activeMedications.map(m => m.name).join(", ") || "None declared"}), feel free to ask me about any symptoms, medication interactions, or navigate any dashboard feature in the left sidebar.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
   }
 }
+
 
 
 
