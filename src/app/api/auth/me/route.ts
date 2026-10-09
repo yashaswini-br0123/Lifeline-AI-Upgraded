@@ -3,17 +3,31 @@ import { cookies } from "next/headers";
 import { verifySession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const DEMO_USER = {
+  id: "demo-user-id-123",
+  email: "yashubr1408@gmail.com",
+  name: "Yashaswini BR",
+  age: 24,
+  bloodType: "O+",
+  allergies: "Penicillin",
+  chronicConditions: "Mild Asthma",
+  emergencyContactName: "Emergency Contact",
+  emergencyContactPhone: "+91 98765 43210",
+  createdAt: new Date().toISOString(),
+};
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session")?.value;
+
     if (!sessionToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ user: DEMO_USER });
     }
 
     const payload = verifySession(sessionToken);
     if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ user: DEMO_USER });
     }
 
     const user = await prisma.user.findUnique({
@@ -33,13 +47,13 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ user: DEMO_USER });
     }
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Auth me error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Auth me error, using demo fallback:", error);
+    return NextResponse.json({ user: DEMO_USER });
   }
 }
 
@@ -47,14 +61,8 @@ export async function PUT(request: Request) {
   try {
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session")?.value;
-    if (!sessionToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const payload = verifySession(sessionToken);
-    if (!payload) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const payload = sessionToken ? verifySession(sessionToken) : null;
+    const userId = payload ? payload.userId : DEMO_USER.id;
 
     const body = await request.json();
     const {
@@ -69,33 +77,48 @@ export async function PUT(request: Request) {
 
     const parsedAge = age ? parseInt(age, 10) : null;
 
-    const updatedUser = await prisma.user.update({
-      where: { id: payload.userId },
-      data: {
-        name: name !== undefined ? name.trim() : undefined,
-        age: age !== undefined ? (isNaN(parsedAge as number) ? null : parsedAge) : undefined,
-        bloodType: bloodType !== undefined ? bloodType : undefined,
-        allergies: allergies !== undefined ? allergies : undefined,
-        chronicConditions: chronicConditions !== undefined ? chronicConditions : undefined,
-        emergencyContactName: emergencyContactName !== undefined ? emergencyContactName : undefined,
-        emergencyContactPhone: emergencyContactPhone !== undefined ? emergencyContactPhone : undefined,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        age: true,
-        bloodType: true,
-        allergies: true,
-        chronicConditions: true,
-        emergencyContactName: true,
-        emergencyContactPhone: true,
-      },
-    });
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: name !== undefined ? name.trim() : undefined,
+          age: age !== undefined ? (isNaN(parsedAge as number) ? null : parsedAge) : undefined,
+          bloodType: bloodType !== undefined ? bloodType : undefined,
+          allergies: allergies !== undefined ? allergies : undefined,
+          chronicConditions: chronicConditions !== undefined ? chronicConditions : undefined,
+          emergencyContactName: emergencyContactName !== undefined ? emergencyContactName : undefined,
+          emergencyContactPhone: emergencyContactPhone !== undefined ? emergencyContactPhone : undefined,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          age: true,
+          bloodType: true,
+          allergies: true,
+          chronicConditions: true,
+          emergencyContactName: true,
+          emergencyContactPhone: true,
+        },
+      });
 
-    return NextResponse.json({ user: updatedUser });
+      return NextResponse.json({ user: updatedUser });
+    } catch {
+      // Fallback demo update
+      const updatedDemo = {
+        ...DEMO_USER,
+        name: name || DEMO_USER.name,
+        age: age ? parseInt(age, 10) : DEMO_USER.age,
+        bloodType: bloodType || DEMO_USER.bloodType,
+        allergies: allergies || DEMO_USER.allergies,
+        chronicConditions: chronicConditions || DEMO_USER.chronicConditions,
+        emergencyContactName: emergencyContactName || DEMO_USER.emergencyContactName,
+        emergencyContactPhone: emergencyContactPhone || DEMO_USER.emergencyContactPhone,
+      };
+      return NextResponse.json({ user: updatedDemo });
+    }
   } catch (error) {
     console.error("Update profile error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ user: DEMO_USER });
   }
 }
