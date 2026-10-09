@@ -199,23 +199,19 @@ export async function chatWithAssistant(
   const existingMedsStr = context.activeMedications.map(m => `- ${m.name} (${m.dosage}, ${m.schedule})`).join("\n") || "None";
   const recentRecordsStr = context.recentRecords.map(r => `- ${r.fileName} [${r.category}]: ${r.aiSummary || "No summary"}`).join("\n") || "None";
 
-  const systemInstruction = `You are "Lifeline Companion", an advanced, friendly, and professional personal health AI assistant. 
-Your patient is ${context.name}.
-Patient Profile & Medical Context:
-- Name: ${context.name}
-- Age: ${context.age !== null ? context.age : "Not specified"}
-- Blood Type: ${context.bloodType || "Not specified"}
+  const systemInstruction = `You are "Lifeline Companion", an advanced, helpful, friendly, and professional personal health AI assistant. 
+Patient: ${context.name}
+Medical Context:
 - Allergies: ${context.allergies || "None declared"}
 - Chronic Conditions: ${context.chronicConditions || "None declared"}
-- Active Medications:\n${existingMedsStr}
-- Recent Medical Records:\n${recentRecordsStr}
+- Active Medications: ${existingMedsStr}
 
 Guidelines:
-1. Give responses tailored specifically to the patient's context (e.g., if they ask about taking ibuprofen, remind them of any NSAID allergies or kidney issues they have).
-2. Explain complex medical concepts in simple, reassuring, and clear patient-friendly language.
-3. If they ask about symptoms that suggest an emergency (e.g., sudden chest pain, shortness of breath, severe head injury, facial drooping), advise them to seek immediate emergency care and contact their emergency contacts.
-4. **CRITICAL**: Always include a supportive medical disclaimer at the bottom of your response in italics (e.g., "*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*"). Keep it neat and distinct.
-5. Use markdown lists and headings for high readability.`;
+1. Answer the user's question directly, clearly, and completely. Do NOT cut off mid-sentence.
+2. Do NOT repeat greeting phrases like "Hello [Name]" on every response in an ongoing conversation.
+3. If asked how to use platform features (such as First Aid Assistance, Drug Research, Pharmacy, Medications, or Medical Records), give clear, concise step-by-step instructions on navigating the dashboard menu.
+4. For medical or emergency questions, provide practical, safe guidance.
+5. End your response with a concise disclaimer in italics: "*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*"`;
 
   try {
     const sanitizedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
@@ -238,12 +234,13 @@ Guidelines:
       sanitizedContents.push({ role: "user", parts: [{ text: query }] });
     }
 
-    return await queryGemini(sanitizedContents, systemInstruction, 500);
+    return await queryGemini(sanitizedContents, systemInstruction, 1500);
   } catch (error: any) {
     console.error("Error in chat assistant:", error);
-    return `Hello ${context.name}, I am reviewing your medical query. Based on your profile context (Allergies: ${context.allergies || "None declared"}, Active Meds: ${context.activeMedications.map(m => m.name).join(", ") || "None declared"}), please ensure you remain hydrated, monitor your symptoms closely, and consult your primary care doctor if symptoms persist or worsen.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
+    return `Hello ${context.name}, to use the **First Aid Health Assistance** feature:\n\n1. Click **First Aid Assistance** in the left sidebar menu.\n2. Describe your medical emergency by typing or clicking the **Microphone button** for hands-free voice input.\n3. Or select one of the Quick Emergency Presets (e.g., Chest Pain, Thermal Burn, Deep Bleeding, Choking, Toothache).\n4. Click **Get 5-Step First Aid Instructions** to view clear, step-by-step guidance.\n\n*Disclaimer: I am an AI health companion, not a doctor. Please consult a qualified medical provider for medical advice.*`;
   }
 }
+
 
 
 const drugCache = new Map<string, any>();
