@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     const record = await prisma.medicalRecord.create({
       data: {
-        userId: payload.userId,
+        userId,
         fileName,
         fileType,
         fileUrl: fileUrl || null,
@@ -87,7 +87,7 @@ export async function DELETE(request: Request) {
       where: { id },
     });
 
-    if (!record || record.userId !== payload.userId) {
+    if (!record || record.userId !== userId) {
       return NextResponse.json({ error: "Record not found." }, { status: 404 });
     }
 

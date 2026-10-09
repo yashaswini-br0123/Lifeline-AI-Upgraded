@@ -44,13 +44,13 @@ export async function POST(request: Request) {
 
     // Fetch user details for allergy/chronic conditions checks
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: userId },
       select: { allergies: true, chronicConditions: true },
     });
 
     // Fetch active medications to check interactions
     const activeMeds = await prisma.medication.findMany({
-      where: { userId: payload.userId, active: true },
+      where: { userId, active: true },
       select: { name: true, dosage: true },
     });
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     const medication = await prisma.medication.create({
       data: {
-        userId: payload.userId,
+        userId,
         name,
         dosage,
         schedule,
@@ -101,7 +101,7 @@ export async function PUT(request: Request) {
       where: { id },
     });
 
-    if (!existingMed || existingMed.userId !== payload.userId) {
+    if (!existingMed || existingMed.userId !== userId) {
       return NextResponse.json({ error: "Medication not found." }, { status: 404 });
     }
 
@@ -120,13 +120,13 @@ export async function PUT(request: Request) {
       (dosage && dosage !== existingMed.dosage)
     ) {
       const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
+        where: { id: userId },
         select: { allergies: true, chronicConditions: true },
       });
 
       const otherActiveMeds = await prisma.medication.findMany({
         where: {
-          userId: payload.userId,
+          userId,
           active: true,
           id: { not: id },
         },
@@ -174,7 +174,7 @@ export async function DELETE(request: Request) {
       where: { id },
     });
 
-    if (!med || med.userId !== payload.userId) {
+    if (!med || med.userId !== userId) {
       return NextResponse.json({ error: "Medication not found." }, { status: 404 });
     }
 

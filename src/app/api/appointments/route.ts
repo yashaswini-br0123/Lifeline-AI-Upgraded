@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
     const appointment = await prisma.appointment.create({
       data: {
-        userId: payload.userId,
+        userId,
         doctorName,
         specialty,
         dateTime: new Date(dateTime),
@@ -77,7 +77,7 @@ export async function PUT(request: Request) {
       where: { id },
     });
 
-    if (!appointment || appointment.userId !== payload.userId) {
+    if (!appointment || appointment.userId !== userId) {
       return NextResponse.json({ error: "Appointment not found." }, { status: 404 });
     }
 
@@ -118,7 +118,7 @@ export async function DELETE(request: Request) {
       where: { id },
     });
 
-    if (!appointment || appointment.userId !== payload.userId) {
+    if (!appointment || appointment.userId !== userId) {
       return NextResponse.json({ error: "Appointment not found." }, { status: 404 });
     }
 
