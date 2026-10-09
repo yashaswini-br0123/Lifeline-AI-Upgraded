@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 const DEMO_USER = {
   id: "demo-user-id-123",
-  email: "yashubr1408@gmail.com",
-  name: "Yashaswini BR",
+  email: "patient@lifeline.ai",
+  name: "Patient",
   age: 24,
   bloodType: "O+",
   allergies: "Penicillin",
