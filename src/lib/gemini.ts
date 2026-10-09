@@ -1,4 +1,3 @@
-const API_KEY = process.env.GEMINI_API_KEY;
 const MODEL_NAME = "gemini-flash-latest";
 
 export interface ChatMessage {
@@ -16,15 +15,32 @@ export interface UserMedicalContext {
   recentRecords: Array<{ fileName: string; category: string; aiSummary: string | null }>;
 }
 
+function getApiKey(): string {
+  const rawKey = process.env.GEMINI_API_KEY || "";
+  return rawKey.replace(/^["']|["']$/g, "").trim();
+}
+
+function extractJson(rawText: string): any {
+  let text = rawText.trim();
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.slice(firstBrace, lastBrace + 1);
+  }
+  return JSON.parse(text);
+}
+
 async function queryGemini(
   contents: Array<{ role: string; parts: Array<{ text: string }> }>,
   systemInstruction?: string
 ): Promise<string> {
-  if (!API_KEY) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not defined in environment variables.");
   }
   
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
   
   const body: any = {
     contents
@@ -59,6 +75,7 @@ async function queryGemini(
 
   return text;
 }
+
 
 /**
  * Summarize and categorize the medical document text
@@ -294,23 +311,30 @@ CRITICAL REQUIREMENTS:
   try {
     const contents = [{ role: "user", parts: [{ text: prompt }] }];
     const rawResult = await queryGemini(contents, systemInstruction);
-
-    let cleanJson = rawResult.trim();
-    if (cleanJson.startsWith("```json")) {
-      cleanJson = cleanJson.slice(7);
+    const parsed = extractJson(rawResult);
+    if (parsed && Array.isArray(parsed.steps) && parsed.steps.length > 0) {
+      return parsed;
     }
-    if (cleanJson.startsWith("```")) {
-      cleanJson = cleanJson.slice(3);
-    }
-    if (cleanJson.endsWith("```")) {
-      cleanJson = cleanJson.slice(0, -3);
-    }
-    cleanJson = cleanJson.trim();
-
-    return JSON.parse(cleanJson);
+    throw new Error("Invalid structure returned from Gemini");
   } catch (error) {
-    console.error("Error fetching first aid guidance from Gemini:", error);
-    throw error;
+    console.error("Error fetching first aid guidance from Gemini, using safe emergency fallback:", error);
+    const isSevere = /chest|heart|attack|breath|stroke|bleed|unconscious|chok/i.test(symptomDescription);
+    return {
+      emergencyType: isSevere ? "Severe Medical Emergency" : "First Aid & Symptom Guidance",
+      isLifeThreatening: isSevere,
+      warningAlert: isSevere 
+        ? "CRITICAL WARNING: Suspected life-threatening situation. Call 112 / 108 in India immediately without delay!" 
+        : "If symptoms worsen, become severe, or cause distress, contact local emergency services (112) immediately.",
+      steps: [
+        "Step 1: Immediately pause physical activity and position the person safely (sitting upright for breathing issues, lying flat with legs elevated for shock).",
+        "Step 2: Monitor vital signs (airway, breathing, pulse) and ensure adequate airflow around the person.",
+        "Step 3: Administer basic first aid: press clean cloth directly on bleeding wounds, or cool burns under running water for 10-15 minutes.",
+        "Step 4: Keep the person calm and warm. Do not administer oral medications or food unless instructed by emergency responders.",
+        "Step 5: Prepare emergency contact details and call 112 / 108 immediately if symptoms escalate."
+      ],
+      whenToCall112: "Call 112/108 immediately for chest tightness, severe breathlessness, profuse bleeding, or loss of consciousness."
+    };
   }
 }
+
 
